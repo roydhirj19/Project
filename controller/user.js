@@ -8,6 +8,12 @@ module.exports.renderSignUpForm  =  (req, res) => {
 module.exports.signUp = async (req, res) => {
     try {
         let { username, email, password } = req.body;
+          // Check if the email already exists in the database
+          const existingUser = await User.findOne({ email });
+          if (existingUser) {
+              req.flash("error", "Email already registered. Please use a different email.");
+              return res.redirect("/signup");
+          }
         const newUser = new User({ email, username })
         const registeredUser = await User.register(newUser, password)
         req.login(registeredUser, (err) => { // sign after auto login and redirect to all listings
