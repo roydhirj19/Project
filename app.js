@@ -66,53 +66,64 @@ app.use(passport.session());
 passport.use(new LocalStrategy(User.authenticate()))
 
 // Google OAuth Strategy
-passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "/auth/google/callback"
-}, async (accessToken, refreshToken, profile, done) => {
-    try {
-        // Check if user already exists
-        let user = await User.findOne({ googleId: profile.id });
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    const callbackURL = process.env.NODE_ENV === 'production' 
+        ? `${process.env.RENDER_EXTERNAL_URL}/auth/google/callback`
+        : "/auth/google/callback";
+    
+    console.log('Google OAuth Configuration:');
+    console.log('NODE_ENV:', process.env.NODE_ENV);
+    console.log('RENDER_EXTERNAL_URL:', process.env.RENDER_EXTERNAL_URL);
+    console.log('Callback URL:', callbackURL);
         
-        if (user) {
-            return done(null, user);
-        }
-        
-        // Check if user exists with same email
-        user = await User.findOne({ email: profile.emails[0].value });
-        
-        if (user) {
-            // Link Google account to existing user
-            user.googleId = profile.id;
-            user.displayName = profile.displayName;
-            user.profilePicture = profile.photos[0]?.value;
-            // Only set username if user doesn't have one
-            if (!user.username) {
-                user.username = profile.displayName || `user_${profile.id.slice(-6)}`;
+    passport.use(new GoogleStrategy({
+        clientID: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        callbackURL: callbackURL
+    }, async (accessToken, refreshToken, profile, done) => {
+        try {
+            // Check if user already exists
+            let user = await User.findOne({ googleId: profile.id });
+            
+            if (user) {
+                return done(null, user);
             }
+            
+            // Check if user exists with same email
+            user = await User.findOne({ email: profile.emails[0].value });
+            
+            if (user) {
+                // Link Google account to existing user
+                user.googleId = profile.id;
+                user.displayName = profile.displayName;
+                user.profilePicture = profile.photos[0]?.value;
+                // Only set username if user doesn't have one
+                if (!user.username) {
+                    user.username = profile.displayName || `user_${profile.id.slice(-6)}`;
+                }
+                await user.save();
+                return done(null, user);
+            }
+            
+            // Create new user with better username
+            const displayName = profile.displayName || `User ${profile.id.slice(-6)}`;
+            const username = displayName.replace(/\s+/g, '_').toLowerCase();
+            
+            user = new User({
+                username: username,
+                googleId: profile.id,
+                email: profile.emails[0].value,
+                displayName: displayName,
+                profilePicture: profile.photos[0]?.value
+            });
+            
             await user.save();
             return done(null, user);
+        } catch (error) {
+            return done(error, null);
         }
-        
-        // Create new user with better username
-        const displayName = profile.displayName || `User ${profile.id.slice(-6)}`;
-        const username = displayName.replace(/\s+/g, '_').toLowerCase();
-        
-        user = new User({
-            username: username,
-            googleId: profile.id,
-            email: profile.emails[0].value,
-            displayName: displayName,
-            profilePicture: profile.photos[0]?.value
-        });
-        
-        await user.save();
-        return done(null, user);
-    } catch (error) {
-        return done(error, null);
-    }
-}));
+    }));
+}
 
 // LinkedIn OAuth Strategy
 if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
