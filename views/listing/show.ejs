@@ -12,12 +12,12 @@
       <img src="<%=listing.image.url%>" class="card-img-top show-img" alt="listing_image">
 
       <div class="card-body">
-        <p class="card-text"> Owned by : <%= listing.owner.username %>
+        <p class="card-text"> Owned by : <%= listing.owner.displayName || listing.owner.username %>
         </p>
         <p class="card-text">
           <%= listing.description %>
         </p>
-        <p class="card-text"> &#8377 <%= listing.price.toLocaleString("en-IN") %>
+        <p class="card-text"> &#8377 <%= listing.price.toLocaleString("en-IN") %> <small class="text-muted">per night</small>
         </p>
         <p class="card-text">
           <%= listing.location %>
@@ -25,6 +25,135 @@
         <p class="card-text">
           <%= listing.country %>
         </p>
+        
+        <!-- Booking Information -->
+        <div class="booking-info mt-3">
+          <p class="card-text">
+            <strong>Room Type:</strong> <%= listing.roomType %>
+          </p>
+          <p class="card-text">
+            <strong>Max Guests:</strong> <%= listing.maxGuests %>
+          </p>
+          <% if(listing.amenities && listing.amenities.length > 0) { %>
+            <p class="card-text">
+              <strong>Amenities:</strong> 
+              <% listing.amenities.forEach((amenity, index) => { %>
+                <span class="badge bg-secondary me-1"><%= amenity %></span>
+                <% if(index < listing.amenities.length - 1) { %>, <% } %>
+              <% }); %>
+            </p>
+          <% } %>
+          
+          <!-- Standard Check-in/Check-out Times -->
+          <div class="check-times mt-2">
+            <p class="card-text mb-1">
+              <strong>Check-in:</strong> 11:00 AM
+            </p>
+            <p class="card-text mb-1">
+              <strong>Check-out:</strong> 11:00 AM
+            </p>
+          </div>
+          
+          <!-- Contact Information -->
+          <% if(listing.contactInfo && (listing.contactInfo.phone || listing.contactInfo.mobile || listing.contactInfo.email)) { %>
+            <div class="contact-info mt-3">
+              <h6>Contact Information</h6>
+              <div class="row">
+                <div class="col-md-6">
+                  <% if(listing.contactInfo.phone) { %>
+                    <p class="card-text mb-1">
+                      <i class="fas fa-phone me-2"></i><%= listing.contactInfo.phone %>
+                    </p>
+                  <% } %>
+                  <% if(listing.contactInfo.mobile) { %>
+                    <p class="card-text mb-1">
+                      <i class="fas fa-mobile-alt me-2"></i><%= listing.contactInfo.mobile %>
+                    </p>
+                  <% } %>
+                  <% if(listing.contactInfo.email) { %>
+                    <p class="card-text mb-1">
+                      <i class="fas fa-envelope me-2"></i><%= listing.contactInfo.email %>
+                    </p>
+                  <% } %>
+                </div>
+                <div class="col-md-6">
+                  <% if(listing.contactInfo.address) { %>
+                    <p class="card-text mb-1">
+                      <i class="fas fa-map-marker-alt me-2"></i><%= listing.contactInfo.address %>
+                    </p>
+                  <% } %>
+                  <% if(listing.contactInfo.emergencyContact) { %>
+                    <p class="card-text mb-1">
+                      <i class="fas fa-exclamation-triangle me-2 text-danger"></i><%= listing.contactInfo.emergencyContact %>
+                    </p>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+          <% } %>
+          
+          <!-- Availability Status -->
+          <div class="availability-status mt-2">
+            <% if(listing.isAvailable) { %>
+              <span class="badge bg-success">Available for Booking</span>
+            <% } else { %>
+              <span class="badge bg-danger">Not Available</span>
+            <% } %>
+          </div>
+        </div>
+        
+        <!-- Booking Button -->
+        <% if(currUser && !currUser._id.equals(listing.owner._id) && listing.isAvailable) { %>
+          <div class="booking-action mt-3">
+            <a href="/listings/<%= listing._id %>/book" class="btn btn-primary btn-lg">
+              <i class="fas fa-calendar-check me-2"></i>Book Now
+            </a>
+          </div>
+        <% } else if(!currUser && listing.isAvailable) { %>
+          <div class="booking-action mt-3">
+            <a href="/login" class="btn btn-primary btn-lg">
+              <i class="fas fa-sign-in-alt me-2"></i>Login to Book
+            </a>
+          </div>
+        <% } %>
+        
+        <!-- Debug Information (remove this after testing) -->
+        <% if(process.env.NODE_ENV === 'development') { %>
+          <div class="mt-3 p-3 bg-light border rounded">
+            <small class="text-muted">
+              <strong>Debug Info:</strong><br>
+              User logged in: <%= !!currUser %><br>
+              User ID: <%= currUser ? currUser._id : 'Not logged in' %><br>
+              Owner ID: <%= listing.owner._id %><br>
+              Is Owner: <%= currUser && currUser._id.equals(listing.owner._id) %><br>
+              Is Available: <%= listing.isAvailable %><br>
+              Room Type: <%= listing.roomType || 'Not set' %><br>
+              Max Guests: <%= listing.maxGuests || 'Not set' %>
+            </small>
+          </div>
+        <% } %>
+        
+        <!-- Simple Debug Info (always visible) -->
+        <div class="mt-3 p-2 bg-light border rounded">
+          <small class="text-muted">
+            <strong>Booking Status:</strong> 
+            <% if(currUser) { %>
+              <% if(currUser._id.equals(listing.owner._id)) { %>
+                You own this listing
+              <% } else if(listing.isAvailable) { %>
+                Available for booking
+              <% } else { %>
+                Not available
+              <% } %>
+            <% } else { %>
+              <% if(listing.isAvailable) { %>
+                Available - Login to book
+              <% } else { %>
+                Not available
+              <% } %>
+            <% } %>
+          </small>
+        </div>
       </div>
     </div>
 
@@ -41,91 +170,181 @@
       <% } %>
         <hr>
         <!-- review box  -->
-
-        <div class="col-8 offset-3 mt-3 mb-3">
-          <% if(currUser){ %>
-            <h4>leave a review</h4>
-            <form action="/listings/<%=listing._id%>/reviews" method="POST" novalidate class="needs-validation">
-              <!-- <div class="mb-3 mt-3">
-                <label for="rating" class="form-label">Rating</label>
-                <input type="range" class="form-range" min="1" max="5" id="rating" name="review[rating]">
-              </div> -->
-
-              <div class="mb-3 mt-3">
-                <label for="rating" class="form-label">Rating</label>
-
-                <fieldset class="starability-slot">
-                  <!-- <label for="rating" class="form-label">Rating</label> -->
-                  <!-- <legend>First rating:</legend> -->
-                  <input type="radio" id="no-rate" class="input-no-rate" name="review[rating]" value="1" checked
-                    aria-label="No rating." />
-                  <input type="radio" id="first-rate1" name="review[rating]" value="1" />
-                  <label for="first-rate1" title="Terrible">1 star</label>
-                  <input type="radio" id="first-rate2" name="review[rating]" value="2" />
-                  <label for="first-rate2" title="Not good">2 stars</label>
-                  <input type="radio" id="first-rate3" name="review[rating]" value="3" />
-                  <label for="first-rate3" title="Average">3 stars</label>
-                  <input type="radio" id="first-rate4" name="review[rating]" value="4" />
-                  <label for="first-rate4" title="Very good">4 stars</label>
-                  <input type="radio" id="first-rate5" name="review[rating]" value="5" />
-                  <label for="first-rate5" title="Amazing">5 stars</label>
-                </fieldset>
-              </div>
-
-              <div class="mb-3 mt-3">
-                <label for="comment" class="form-label">Comment</label>
-                <textarea name="review[comment]" id="comment" cols="10" rows="5" class="form-control"
-                  required></textarea>
-                <div class="invalid-feedback">
-                  Please enter a short description
+        <div class="row">
+          <div class="col-lg-6 col-md-8 col-sm-10 mx-auto mt-3 mb-3">
+            <% if(currUser){ %>
+              <h4>Leave a Review</h4>
+              <form action="/listings/<%=listing._id%>/reviews" method="POST" novalidate class="needs-validation">
+                <div class="mb-3 mt-3">
+                  <label for="rating" class="form-label">Rating</label>
+                  <fieldset class="starability-slot">
+                    <input type="radio" id="no-rate" class="input-no-rate" name="review[rating]" value="1" checked
+                      aria-label="No rating." />
+                    <input type="radio" id="first-rate1" name="review[rating]" value="1" />
+                    <label for="first-rate1" title="Terrible">1 star</label>
+                    <input type="radio" id="first-rate2" name="review[rating]" value="2" />
+                    <label for="first-rate2" title="Not good">2 stars</label>
+                    <input type="radio" id="first-rate3" name="review[rating]" value="3" />
+                    <label for="first-rate3" title="Average">3 stars</label>
+                    <input type="radio" id="first-rate4" name="review[rating]" value="4" />
+                    <label for="first-rate4" title="Very good">4 stars</label>
+                    <input type="radio" id="first-rate5" name="review[rating]" value="5" />
+                    <label for="first-rate5" title="Amazing">5 stars</label>
+                  </fieldset>
                 </div>
-              </div>
-              <button class="btn btn-outline-dark">submit</button>
-            </form>
-            <% } %>
-              <% if(listing.reviews.length> 0){ %>
-                <p><b>All reviews</b></p>
-                <div class="row">
-                  <% for(let review of listing.reviews){ %>
-                    <div class="card col-5 mb-3 ms-3">
-                      <div class="card-body ">
-                        <h5 class="card-title">
-                          <%= review.author.username %>
-                        </h5>
-                        <p class="card-text">
-                          <%= review.comment %>
-                        </p>
 
-                        <p class="starability-result" data-rating="<%= review.rating %>">
-                        </p>
+                <div class="mb-3 mt-3">
+                  <label for="comment" class="form-label">Comment</label>
+                  <textarea name="review[comment]" id="comment" cols="10" rows="3" class="form-control"
+                    required></textarea>
+                  <div class="invalid-feedback">
+                    Please enter a short description
+                  </div>
+                </div>
+                <button class="btn btn-outline-dark">Submit</button>
+              </form>
+              <% } %>
+                <% if(listing.reviews.length> 0){ %>
+                  <p><b>All Reviews</b></p>
+                  <div class="row">
+                    <% for(let review of listing.reviews){ %>
+                      <div class="col-12 mb-3">
+                        <div class="card review-card h-100">
+                          <div class="card-body">
+                            <h6 class="card-title">
+                              <%= review.author.displayName || review.author.username %>
+                            </h6>
+                            <p class="card-text">
+                              <%= review.comment %>
+                            </p>
+                            <p class="starability-result" data-rating="<%= review.rating %>">
+                            </p>
+                          </div>
+                          <% if(currUser && currUser._id.equals(review.author._id)){ %>
+                            <div class="card-footer bg-transparent border-0">
+                              <form method="post" action="/listings/<%=listing._id%>/reviews/<%=review._id%>?_method=DELETE">
+                                <button class="btn btn-sm btn-dark">Delete</button>
+                              </form>
+                            </div>
+                          <% } %>
+                        </div>
                       </div>
-                      <% if(currUser && currUser._id.equals(review.author._id)){ %>
-
-                        <form method="post" action="/listings/<%=listing._id%>/reviews/<%=review._id%>?_method=DELETE"
-                          class="mb-3">
-                          <button class="btn btn-sm btn-dark">Delete</button>
-                        </form>
-                        <% } %>
-
-                    </div>
-                    <% } %>
-                </div>
-                <% } %>
+                      <% } %>
+                  </div>
+                  <% } %>
+          </div>
         </div>
-        <div class="col-8 offset-3 mb-3">
-          <h3>where you'll be</h3>
-          <div id="map"></div>
+
+        <!-- map section -->
+        <div class="row">
+          <div class="col-lg-6 col-md-8 col-sm-10 mx-auto mb-3">
+            <h3>Where You'll Be</h3>
+            <div id="map" style="height: 350px; width: 100%; border-radius: 8px;"></div>
+            <div id="map-status" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
+          </div>
         </div>
   </div>
   </div>
 
   <script>
-    maptilersdk.config.apiKey = 'y1P7Sdh4mKWfSIL73uRC'; // Replace with your actual Maptiler API key
-    console.log(maptilersdk.config.apiKey);
-    const map = new maptilersdk.Map({
-      container: 'map', // container's id or the HTML element in which the SDK will render the map
-      style: maptilersdk.MapStyle.STREETS,
-      center: [77.2088, 28.6139], // starting position [lng, lat]
-      zoom: 14 // starting zoom
+    // Flag to prevent global map initialization
+    window.listingMapInitialized = true;
+    
+    // Initialize map for this specific listing
+    document.addEventListener('DOMContentLoaded', function() {
+        const mapContainer = document.getElementById('map');
+        if (!mapContainer) {
+            console.error('Map container not found');
+            return;
+        }
+
+        // Get listing data with better fallback handling
+        let coordinates;
+        try {
+            coordinates = <%- JSON.stringify(listing.geometry ? listing.geometry.coordinates : null) %>;
+        } catch (e) {
+            console.error('Error parsing coordinates:', e);
+            coordinates = null;
+        }
+        
+        const location = "<%= listing.location %>";
+        const country = "<%= listing.country %>";
+        const mapKey = "<%= process.env.MAP_TOKEN %>";
+
+        // Use fallback coordinates if none available
+        if (!coordinates || coordinates[0] === 0 && coordinates[1] === 0) {
+            console.log('No valid coordinates found, using fallback');
+            coordinates = [77.2088, 28.6139]; // Delhi, India fallback
+        }
+
+        console.log('Map initialization:', { coordinates, location, country, mapKey });
+
+        // Test if API key is valid
+        if (!mapKey || mapKey === 'undefined' || mapKey === '') {
+            console.error('MapTiler API key is missing or invalid');
+            document.getElementById('map-status').innerHTML = '❌ Map configuration error. Please check your MAP_TOKEN environment variable.';
+            mapContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Map configuration error. Please check your MAP_TOKEN environment variable.</div>';
+            return;
+        }
+
+        // document.getElementById('map-status').innerHTML = '🔄 Loading map...';
+
+        // Wait for MapTiler SDK to be ready
+        function initializeMap() {
+            if (typeof maptilersdk === 'undefined') {
+                console.error('MapTiler SDK not loaded');
+                document.getElementById('map-status').innerHTML = '❌ MapTiler SDK not loaded. Please check your internet connection.';
+                return;
+            }
+
+            try {
+                // Configure MapTiler
+                maptilersdk.config.apiKey = mapKey;
+
+                // Create map
+                const map = new maptilersdk.Map({
+                    container: 'map',
+                    style: maptilersdk.MapStyle.STREETS,
+                    center: coordinates,
+                    zoom: 12
+                });
+
+                // Add marker
+                const marker = new maptilersdk.Marker()
+                    .setLngLat(coordinates)
+                    .addTo(map);
+
+                // Add popup with location info
+                if (location && country) {
+                    const popup = new maptilersdk.Popup({ offset: 25 })
+                        .setHTML(`<h6>${location}</h6><p>${country}</p>`);
+                    marker.setPopup(popup);
+                }
+
+                // Add click event to marker to show popup
+                marker.on('click', () => {
+                    if (location && country) {
+                        const popup = new maptilersdk.Popup({ offset: 25 })
+                            .setHTML(`<h6>${location}</h6><p>${country}</p>`);
+                        marker.setPopup(popup);
+                    }
+                });
+                // for debugging purposes
+                // console.log('Map initialized successfully');
+                // document.getElementById('map-status').innerHTML = '✅ Map loaded successfully';
+            } catch (error) {
+                console.error('Error initializing map:', error);
+                document.getElementById('map-status').innerHTML = '❌ Error loading map: ' + error.message;
+                mapContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Map could not be loaded. Please check your internet connection.</div>';
+            }
+        }
+
+        // Try to initialize immediately, if not ready, wait a bit
+        if (typeof maptilersdk !== 'undefined') {
+            initializeMap();
+        } else {
+            // Wait for SDK to load
+            setTimeout(initializeMap, 1000);
+        }
     });
   </script>

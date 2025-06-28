@@ -21,6 +21,28 @@ router.route("/login")
         userController.login
     );
 
+// Google OAuth routes
+router.get('/auth/google',
+    passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+router.get('/auth/google/callback',
+    passport.authenticate('google', { failureRedirect: '/login' }),
+    userController.login
+);
+
+// LinkedIn OAuth routes
+if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
+    router.get('/auth/linkedin',
+        passport.authenticate('linkedin')
+    );
+
+    router.get('/auth/linkedin/callback',
+        passport.authenticate('linkedin', { failureRedirect: '/login' }),
+        userController.login
+    );
+}
+
 router.get("/logout", userController.logout)
 
 module.exports = router;

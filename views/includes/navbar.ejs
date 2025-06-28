@@ -35,6 +35,21 @@
                 <a class="nav-link" href="/listings">Explore</a>
             </div>
             <div class="navbar-nav ms-auto">
+                <select class="form-select" aria-label="Default select example" id="country">
+                    <option selected>Choose Country</option>
+                    <option value="US">United States</option>
+                    <option value="CA">Canada</option>
+                    <option value="GB">United Kingdom</option>
+                    <option value="AU">Australia</option>
+                    <option value="IN">India</option>
+                    <option value="DE">Germany</option>
+                    <option value="FR">France</option>
+                    <option value="JP">Japan</option>
+                    <option value="CN">China</option>
+                    <option value="BR">Brazil</option>
+                </select>
+            </div>
+            <div class="navbar-nav ms-auto">
                 <form class="d-flex" role="search">
                     <input class="form-control me-2 search-input" type="search" placeholder="Search destination">
                     <button class="btn search-btn" type="submit"> <i
@@ -42,7 +57,7 @@
                 </form>
             </div>
             <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/listings/new">Airbnb your home</a>
+                <a class="nav-link" href="/listings/new">Become a host</a>
                 <!--   //if page not logged in or sign up -->
                 <% if(!currUser){%>
                     <a class="nav-link " href="/signup"> <b>sign up</b></a>
@@ -51,6 +66,7 @@
                         <!--   //if page logged in or sign up -->
 
                         <% if(currUser){%>
+                            <a class="nav-link" href="/bookings"><b>My Bookings</b></a>
                             <a class="nav-link" href="/logout"><b>Log out</b></a>
                             <% }%>
 

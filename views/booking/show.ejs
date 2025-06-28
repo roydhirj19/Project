@@ -1,0 +1,143 @@
+<% layout("/layouts/boilerplate") -%>
+
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-lg-8 col-md-10 mx-auto">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <h3>Booking Details</h3>
+            <span class="badge <%= booking.status === 'confirmed' ? 'bg-success' : 
+                                booking.status === 'pending' ? 'bg-warning' : 
+                                booking.status === 'cancelled' ? 'bg-danger' : 'bg-secondary' %>">
+              <%= booking.status.charAt(0).toUpperCase() + booking.status.slice(1) %>
+            </span>
+          </div>
+        </div>
+        <div class="card-body">
+          <!-- Listing Information -->
+          <div class="listing-info mb-4">
+            <div class="row">
+              <div class="col-md-4">
+                <img src="<%= booking.listing.image.url %>" class="img-fluid rounded" alt="<%= booking.listing.title %>">
+              </div>
+              <div class="col-md-8">
+                <h5><%= booking.listing.title %></h5>
+                <p class="text-muted"><%= booking.listing.location %>, <%= booking.listing.country %></p>
+                <p><strong>Price per night:</strong> ₹<%= booking.listing.price.toLocaleString("en-IN") %></p>
+                <p><strong>Room Type:</strong> <%= booking.listing.roomType %></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Booking Details -->
+          <div class="booking-details mb-4">
+            <h6>Stay Details</h6>
+            <div class="row">
+              <div class="col-md-6">
+                <p><strong>Check-in:</strong> <%= new Date(booking.checkIn).toLocaleDateString('en-IN') %> at <%= booking.checkInTime %></p>
+                <p><strong>Check-out:</strong> <%= new Date(booking.checkOut).toLocaleDateString('en-IN') %> at <%= booking.checkOutTime %></p>
+                <p><strong>Number of Guests:</strong> <%= booking.numberOfGuests %></p>
+              </div>
+              <div class="col-md-6">
+                <p><strong>Booking Date:</strong> <%= new Date(booking.bookingDate).toLocaleDateString('en-IN') %></p>
+                <p><strong>Total Price:</strong> ₹<%= booking.totalPrice.toLocaleString("en-IN") %></p>
+                <p><strong>Payment Status:</strong> 
+                  <span class="badge <%= booking.paymentStatus === 'paid' ? 'bg-success' : 'bg-warning' %>">
+                    <%= booking.paymentStatus.charAt(0).toUpperCase() + booking.paymentStatus.slice(1) %>
+                  </span>
+                </p>
+              </div>
+            </div>
+            
+            <% if(booking.specialRequests && booking.specialRequests.trim() !== '') { %>
+              <div class="mt-3">
+                <p><strong>Special Requests:</strong></p>
+                <p class="text-muted"><%= booking.specialRequests %></p>
+              </div>
+            <% } %>
+          </div>
+
+          <!-- Customer Information -->
+          <div class="customer-info mb-4">
+            <h6>Customer Information</h6>
+            <p><strong>Name:</strong> <%= booking.customer.displayName || booking.customer.username %></p>
+            <p><strong>Email:</strong> <%= booking.customer.email %></p>
+          </div>
+
+          <!-- Hotel Contact Information -->
+          <div class="hotel-contact-info mb-4">
+            <h6>Hotel Contact Information</h6>
+            <div class="row">
+              <div class="col-md-6">
+                <% if(booking.listing.contactInfo && booking.listing.contactInfo.phone) { %>
+                  <p><strong>Phone:</strong> 
+                    <a href="tel:<%= booking.listing.contactInfo.phone %>" class="text-decoration-none">
+                      <i class="fas fa-phone me-2"></i><%= booking.listing.contactInfo.phone %>
+                    </a>
+                  </p>
+                <% } %>
+                <% if(booking.listing.contactInfo && booking.listing.contactInfo.mobile) { %>
+                  <p><strong>Mobile:</strong> 
+                    <a href="tel:<%= booking.listing.contactInfo.mobile %>" class="text-decoration-none">
+                      <i class="fas fa-mobile-alt me-2"></i><%= booking.listing.contactInfo.mobile %>
+                    </a>
+                  </p>
+                <% } %>
+                <% if(booking.listing.contactInfo && booking.listing.contactInfo.email) { %>
+                  <p><strong>Email:</strong> 
+                    <a href="mailto:<%= booking.listing.contactInfo.email %>" class="text-decoration-none">
+                      <i class="fas fa-envelope me-2"></i><%= booking.listing.contactInfo.email %>
+                    </a>
+                  </p>
+                <% } %>
+              </div>
+              <div class="col-md-6">
+                <% if(booking.listing.contactInfo && booking.listing.contactInfo.address) { %>
+                  <p><strong>Address:</strong> 
+                    <i class="fas fa-map-marker-alt me-2"></i><%= booking.listing.contactInfo.address %>
+                  </p>
+                <% } %>
+                <% if(booking.listing.contactInfo && booking.listing.contactInfo.emergencyContact) { %>
+                  <p><strong>Emergency Contact:</strong> 
+                    <a href="tel:<%= booking.listing.contactInfo.emergencyContact %>" class="text-decoration-none text-danger">
+                      <i class="fas fa-exclamation-triangle me-2"></i><%= booking.listing.contactInfo.emergencyContact %>
+                    </a>
+                  </p>
+                <% } %>
+              </div>
+            </div>
+            
+            <% if(!booking.listing.contactInfo || (!booking.listing.contactInfo.phone && !booking.listing.contactInfo.mobile && !booking.listing.contactInfo.email)) { %>
+              <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                Contact information not available for this property. Please contact the property owner directly.
+              </div>
+            <% } %>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="action-buttons">
+            <% if(booking.status === 'pending' && currUser._id.equals(booking.customer._id)) { %>
+              <form method="POST" action="/bookings/<%= booking._id %>?_method=DELETE" 
+                    onsubmit="return confirm('Are you sure you want to cancel this booking?')" 
+                    style="display: inline;">
+                <button type="submit" class="btn btn-danger">Cancel Booking</button>
+              </form>
+            <% } %>
+            
+            <% if(booking.status === 'pending' && currUser._id.equals(booking.listing.owner._id)) { %>
+              <form method="POST" action="/bookings/<%= booking._id %>/confirm?_method=PATCH" 
+                    style="display: inline;">
+                <button type="submit" class="btn btn-success">Confirm Booking</button>
+              </form>
+            <% } %>
+            
+            <a href="/bookings" class="btn btn-secondary">Back to My Bookings</a>
+            <a href="/listings/<%= booking.listing._id %>" class="btn btn-outline-primary">View Listing</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

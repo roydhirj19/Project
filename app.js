@@ -11,6 +11,8 @@ const MongoStore = require('connect-mongo');
 const flash = require('connect-flash');
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const LinkedInStrategy = require('passport-linkedin-oauth2').Strategy;
 const User = require("./models/user.js");
 let port = 5000;
 
@@ -19,6 +21,7 @@ let port = 5000;
 const listingRouter = require("./routes/listing.js")
 const reviewRouter = require("./routes/review.js")
 const userRouter = require("./routes/user.js")
+const bookingRouter = require("./routes/booking.js")
 
 app.set("view engine", "ejs");
 app.engine("ejs", ejsMate);
@@ -62,15 +65,130 @@ app.use(passport.initialize());
 app.use(passport.session());
 passport.use(new LocalStrategy(User.authenticate()))
 
-passport.serializeUser(User.serializeUser());
-passport.deserializeUser(User.deserializeUser());
+// Google OAuth Strategy
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: "/auth/google/callback"
+}, async (accessToken, refreshToken, profile, done) => {
+    try {
+        // Check if user already exists
+        let user = await User.findOne({ googleId: profile.id });
+        
+        if (user) {
+            return done(null, user);
+        }
+        
+        // Check if user exists with same email
+        user = await User.findOne({ email: profile.emails[0].value });
+        
+        if (user) {
+            // Link Google account to existing user
+            user.googleId = profile.id;
+            user.displayName = profile.displayName;
+            user.profilePicture = profile.photos[0]?.value;
+            // Only set username if user doesn't have one
+            if (!user.username) {
+                user.username = profile.displayName || `user_${profile.id.slice(-6)}`;
+            }
+            await user.save();
+            return done(null, user);
+        }
+        
+        // Create new user with better username
+        const displayName = profile.displayName || `User ${profile.id.slice(-6)}`;
+        const username = displayName.replace(/\s+/g, '_').toLowerCase();
+        
+        user = new User({
+            username: username,
+            googleId: profile.id,
+            email: profile.emails[0].value,
+            displayName: displayName,
+            profilePicture: profile.photos[0]?.value
+        });
+        
+        await user.save();
+        return done(null, user);
+    } catch (error) {
+        return done(error, null);
+    }
+}));
+
+// LinkedIn OAuth Strategy
+if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
+    passport.use(new LinkedInStrategy({
+        clientID: process.env.LINKEDIN_CLIENT_ID,
+        clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+        callbackURL: "/auth/linkedin/callback",
+        scope: ['r_emailaddress', 'r_liteprofile']
+    }, async (accessToken, refreshToken, profile, done) => {
+        try {
+            // Check if user already exists
+            let user = await User.findOne({ linkedinId: profile.id });
+            
+            if (user) {
+                return done(null, user);
+            }
+            
+            // Check if user exists with same email
+            const email = profile.emails[0]?.value;
+            if (email) {
+                user = await User.findOne({ email: email });
+                
+                if (user) {
+                    // Link LinkedIn account to existing user
+                    user.linkedinId = profile.id;
+                    user.displayName = profile.displayName;
+                    user.profilePicture = profile.photos[0]?.value;
+                    // Only set username if user doesn't have one
+                    if (!user.username) {
+                        user.username = profile.displayName || `user_${profile.id.slice(-6)}`;
+                    }
+                    await user.save();
+                    return done(null, user);
+                }
+            }
+            
+            // Create new user with better username
+            const displayName = profile.displayName || `User ${profile.id.slice(-6)}`;
+            const username = displayName.replace(/\s+/g, '_').toLowerCase();
+            
+            user = new User({
+                username: username,
+                linkedinId: profile.id,
+                email: email || `linkedin_${profile.id}@example.com`,
+                displayName: displayName,
+                profilePicture: profile.photos[0]?.value
+            });
+            
+            await user.save();
+            return done(null, user);
+        } catch (error) {
+            return done(error, null);
+        }
+    }));
+}
+
+passport.serializeUser((user, done) => {
+    done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+    try {
+        const user = await User.findById(id);
+        done(null, user);
+    } catch (error) {
+        done(error, null);
+    }
+});
 
 
 
 app.use((req, res, next) => {
+  res.locals.currUser = req.user;
   res.locals.success = req.flash("success");
   res.locals.error = req.flash("error");
-  res.locals.currUser = req.user;
+  res.locals.linkedinEnabled = !!(process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET);
   next();
 })
 
@@ -91,6 +209,7 @@ async function main() {
 app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewRouter);
 app.use("/", userRouter);
+app.use("/", bookingRouter);
 
 /** in case if page not found */
 app.all("*", (req, res, next) => {

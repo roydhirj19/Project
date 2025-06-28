@@ -50,7 +50,87 @@
                     </div>
                 </div>
 
+                <!-- Booking-related fields -->
+                <div class="row">
+                    <div class="mb-3 col-md-6">
+                        <label for="roomType" class="form-label">Room Type</label>
+                        <select name="listing[roomType]" class="form-select" required>
+                            <option value="">Select room type</option>
+                            <option value="Private Room">Private Room</option>
+                            <option value="Shared Room">Shared Room</option>
+                            <option value="Entire Place">Entire Place</option>
+                        </select>
+                        <div class="invalid-feedback">
+                            Please select a room type
+                        </div>
+                    </div>
+                    <div class="mb-3 col-md-6">
+                        <label for="maxGuests" class="form-label">Maximum Guests</label>
+                        <input type="number" name="listing[maxGuests]" placeholder="2" class="form-control" 
+                               min="1" max="10" value="2" required>
+                        <div class="invalid-feedback">
+                            Please enter a valid number of guests
+                        </div>
+                    </div>
+                </div>
 
+                <div class="mb-3">
+                    <label for="amenities" class="form-label">Amenities (comma-separated)</label>
+                    <input type="text" name="listing[amenities]" placeholder="WiFi, Kitchen, Parking, AC" 
+                           class="form-control">
+                    <div class="form-text">Enter amenities separated by commas</div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="listing[isAvailable]" 
+                               id="isAvailable" value="true" checked>
+                        <label class="form-check-label" for="isAvailable">
+                            Available for booking
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Contact Information -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5>Contact Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">Phone Number</label>
+                                    <input type="tel" name="listing[contactInfo][phone]" class="form-control" 
+                                           placeholder="+91 1234567890">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="mobile" class="form-label">Mobile Number</label>
+                                    <input type="tel" name="listing[contactInfo][mobile]" class="form-control" 
+                                           placeholder="+91 9876543210">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" name="listing[contactInfo][email]" class="form-control" 
+                                   placeholder="contact@hotel.com">
+                        </div>
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Full Address</label>
+                            <textarea name="listing[contactInfo][address]" class="form-control" rows="2" 
+                                      placeholder="Complete address of the property"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="emergencyContact" class="form-label">Emergency Contact</label>
+                            <input type="tel" name="listing[contactInfo][emergencyContact]" class="form-control" 
+                                   placeholder="+91 9999999999">
+                            <div class="form-text">24/7 emergency contact number</div>
+                        </div>
+                    </div>
+                </div>
 
                 <button class="btn btn-dark mb-3 add-btn ">add</button>
                 <br><br>
