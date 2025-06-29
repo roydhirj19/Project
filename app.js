@@ -69,7 +69,7 @@ passport.use(new LocalStrategy(User.authenticate()))
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     const callbackURL = process.env.NODE_ENV === 'production' 
         ? `${process.env.RENDER_EXTERNAL_URL}/auth/google/callback`
-        : "/auth/google/callback";
+        : "http://localhost:5000/auth/google/callback";
     
     console.log('Google OAuth Configuration:');
     console.log('NODE_ENV:', process.env.NODE_ENV);
