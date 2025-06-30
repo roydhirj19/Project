@@ -1,35 +1,60 @@
 const NodeGeocoder = require('node-geocoder');
 
-const options = {
-    provider: 'openstreetmap',
-    // You can also use other providers like 'google', 'mapquest', etc.
-    // For Google, you would need an API key
-    // provider: 'google',
-    // apiKey: process.env.GOOGLE_MAPS_API_KEY,
-    formatter: null
+// Free geocoding using Nominatim (OpenStreetMap) - works worldwide
+const freeGeocode = async (location, country) => {
+    const searchQuery = `${location}, ${country}`;
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`;
+    
+    try {
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'StayEasy-App/1.0 (https://roydhiraj.com; contact@daisydhiraj.com)',
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+            const result = data[0];
+            return {
+                longitude: parseFloat(result.lon),
+                latitude: parseFloat(result.lat)
+            };
+        }
+        return null;
+    } catch (error) {
+        console.error('Geocoding error:', error);
+        return null;
+    }
 };
-
-const geocoder = NodeGeocoder(options);
 
 const geocodeLocation = async (location, country) => {
     try {
         const searchQuery = `${location}, ${country}`;
-        const results = await geocoder.geocode(searchQuery);
+        console.log('Geocoding location:', searchQuery);
         
-        if (results && results.length > 0) {
-            const result = results[0];
+        const result = await freeGeocode(location, country);
+        
+        if (result) {
+            console.log('Geocoding successful:', result);
             return {
                 type: 'Point',
                 coordinates: [result.longitude, result.latitude]
             };
-        } else {
-            // Fallback to a default location if geocoding fails
-            console.log(`Geocoding failed for: ${searchQuery}`);
-            return {
-                type: 'Point',
-                coordinates: [0, 0] // Default coordinates
-            };
         }
+        
+        // Fallback to default coordinates
+        console.log(`Geocoding failed for: ${searchQuery}`);
+        return {
+            type: 'Point',
+            coordinates: [0, 0] // Default coordinates
+        };
+        
     } catch (error) {
         console.error('Geocoding error:', error);
         return {
